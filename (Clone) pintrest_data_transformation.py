@@ -1,11 +1,16 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC ##### Import relevant libraries:
+# MAGIC #### Import relevant libraries:
 
 # COMMAND ----------
 
 from pyspark.sql.functions import *
 import urllib
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Mount S3 bucket:
 
 # COMMAND ----------
 
@@ -23,13 +28,8 @@ SOURCE_URL = f"s3n://{ACCESS_KEY}:{ENCODED_SECRET_KEY}@{AWS_S3_BUCKET}"
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ##### Mount and display S3 bucket:
-
-# COMMAND ----------
-
 #Used only when mounting for first time - comment out if running the whole notebook from scratch.
-dbutils.fs.mount(SOURCE_URL, MOUNT_NAME)
+#dbutils.fs.mount(SOURCE_URL, MOUNT_NAME)
 
 # COMMAND ----------
 
@@ -39,7 +39,7 @@ dbutils.fs.mount(SOURCE_URL, MOUNT_NAME)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Load the post, location and user data into dataframes. 
+# MAGIC #### Load the post, location and user data into dataframes:
 
 # COMMAND ----------
 
@@ -68,115 +68,203 @@ user_df = spark.read.format("json") \
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Inspect the first five rows of the pin dataframe to identify structure and begin diagnosing cleanup issues. 
-
-# COMMAND ----------
-
-display(pin_df.limit(5))
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC Begin data cleaning:
+# MAGIC #### Clean pin_df:
 
 # COMMAND ----------
 
 pin_df = pin_df.dropDuplicates()
 
-# Remove unnecessary string content:
-pin_df = pin_df.withColumn("follower_count", regexp_replace(col("follower_count"), r"(\d)k$", "$1"))
-pin_df = pin_df.withColumn("save_location", regexp_replace(col("save_location"), r"^Local save in", ""))
+# List of erroneous entries to remove.
+erroneous_entries = ["No description available Story format", "User Info Error", "Image src error" , "User Info Error", "N,o, ,T,a,g,s, ,A,v,a,i,l,a,b,l,e", "No Title Data Available"]
 
-# Recast dtypes:
+# List comp to replace extant null values and empty cells with 'None'.
+pin_df = pin_df.select(*[when(col(column) == "", None) \
+                         .when(col(column).isNull(), None) \
+                         .when(col(column).isin(erroneous_entries), None) \
+                         .otherwise(col(column)).alias(column) for column in pin_df.columns]
+                       )
+
+# Regex removes/modifies unnecessary string appendages.
+pin_df = pin_df.withColumn("save_location", regexp_replace(col("save_location"), r"^Local save in", ""))
+pin_df = pin_df.withColumn("follower_count", regexp_replace(col("follower_count"), r"(\d)k$", "$1"))
+pin_df = pin_df.withColumn("follower_count", regexp_replace(col("follower_count"), r"(\d)M$", "$1\\000"))
+
+# Recast dtypes.
 pin_df = pin_df.withColumn("follower_count", pin_df["follower_count"].cast("int"))
-pin_df = pin_df.withColumnRenamed("index", "ind")
-pin_df = pin_df.withColumn("ind", pin_df["ind"].cast("int"))
 pin_df = pin_df.withColumn("downloaded", pin_df["downloaded"].cast("boolean"))
 
+# Rename and reorder columns.
+pin_df = pin_df.withColumnRenamed("index", "ind")
 pin_df = pin_df.select("ind", "unique_id", "title", "description", "follower_count", "poster_name", "tag_list", "is_image_or_video", "image_src", "save_location", "category", "downloaded")
 pin_df = pin_df.orderBy("ind")
-pin_df = pin_df.withColumn("ind", monotonically_increasing_id())
+
+# Recast dtype after renaming and reordering.
+pin_df = pin_df.withColumn("ind", pin_df["ind"].cast("int"))
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC OPTIMIZE pin_df
-
-# COMMAND ----------
-
-null_counts = [pin_df.filter(col(column).isNull()).count() for column in pin_df.columns]
-
-for column, count in zip(pin_df.columns, null_counts):
-    print(f"Number of null values in column '{column}': {count}")
-
-pin_df = pin_df.replace({"": None})
-
-# COMMAND ----------
-
-null_counts = [pin_df.filter(col(column).isNull()).count() for column in pin_df.columns]
-
-for column, count in zip(pin_df.columns, null_counts):
-    print(f"Number of null values in column '{column}': {count}")
-
-
-# COMMAND ----------
-
-display(geo_df.limit(5))
+# MAGIC %md
+# MAGIC #### Clean geo_df:
 
 # COMMAND ----------
 
 geo_df = geo_df.dropDuplicates()
 
-geo_df = geo_df.withColumn("coordinates", array("latitude", "longitude"))
+# Construct new array column 'coordinates' using latitude and longitude; drop latitude and longitude cols.
+#geo_df = geo_df.withColumn("coordinates", array("latitude", "longitude"))
 geo_df = geo_df.drop("latitude", "longitude")
 
-geo_df = geo_df.withColumnRenamed("index", "ind")
-
+# Recast dtype
 geo_df = geo_df.withColumn("timestamp", to_timestamp("timestamp"))
 
+# Rename and Reorder cols.
+geo_df = geo_df.withColumnRenamed("index", "ind")
 geo_df = geo_df.select("ind", "country", "coordinates", "timestamp")
-
 geo_df = geo_df.orderBy("ind")
-geo_df = geo_df.withColumn("ind", monotonically_increasing_id())
+
+# Trim whitespace in 'country' col.
+geo_df = geo_df.withColumn("country", trim(geo_df["country"]))
+
+# Recast after reordering and naming.
 geo_df = geo_df.withColumn("ind", geo_df["ind"].cast("int"))
 
 # COMMAND ----------
 
-geo_df.show()
-
-# COMMAND ----------
-
-
-print(geo_df.printSchema())
-
-# COMMAND ----------
-
-display(user_df.limit(5))
+# MAGIC %md
+# MAGIC #### Clean user_df:
 
 # COMMAND ----------
 
 user_df.dropDuplicates()
 
+# Construct new col 'user_name' using 'first_name' and 'last_name' cols; drop 'first_name' and 'last_name' cols.
 user_df = user_df.withColumn("user_name", concat("first_name", lit(" "), "last_name"))
 user_df = user_df.drop("first_name", "last_name")
 
+# Recast dtypes.
 user_df = user_df.withColumn("date_joined", to_timestamp("date_joined"))
 user_df = user_df.withColumn("age", user_df["age"].cast("int"))
 
+# Reorder and rename cols.
 user_df = user_df.withColumnRenamed("index", "ind")
-
 user_df = user_df.select("ind", "user_name", "age", "date_joined")
-
 user_df = user_df.orderBy("ind")
-user_df = user_df.withColumn("ind", monotonically_increasing_id())
+
+# Recast after reorder and rename.
 user_df = user_df.withColumn("ind", user_df["ind"].cast("int"))
 
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC #### Analysis:
+
+# COMMAND ----------
+
+pin_df.createOrReplaceTempView("pin_df")
+geo_df.createOrReplaceTempView("geo_df")
+user_df.createOrReplaceTempView("user_df")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Find the most popular Pinterest category by country:
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC ---This query isn't quite right: returns thousands of results viz. far more than there are countries in the world---
+# MAGIC   SELECT
+# MAGIC     geo_df.country,
+# MAGIC     pin_df.category,
+# MAGIC     FIRST_VALUE(pin_df.category) OVER (
+# MAGIC       PARTITION BY geo_df.country
+# MAGIC       ORDER BY pin_df.category
+# MAGIC     )
+# MAGIC FROM 
+# MAGIC   pin_df
+# MAGIC INNER JOIN
+# MAGIC   geo_df
+# MAGIC ON 
+# MAGIC   pin_df.ind = geo_df.ind;
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Find how many posts each category had between 2018 and 2022:
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC WITH year_df AS(
+# MAGIC   SELECT 
+# MAGIC     ind,
+# MAGIC     EXTRACT(YEAR FROM timestamp) AS post_year
+# MAGIC   FROM 
+# MAGIC     geo_df
+# MAGIC )
+# MAGIC SELECT
+# MAGIC   post_year, 
+# MAGIC   category, 
+# MAGIC   COUNT(*) AS category_count
+# MAGIC FROM 
+# MAGIC   pin_df
+# MAGIC INNER JOIN
+# MAGIC   year_df
+# MAGIC ON 
+# MAGIC   pin_df.ind = year_df.ind
+# MAGIC WHERE 
+# MAGIC   post_year BETWEEN 2018 AND 2022
+# MAGIC GROUP BY 
+# MAGIC   category, 
+# MAGIC   year_df.post_year
+# MAGIC ORDER BY 
+# MAGIC   post_year DESC; 
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Find the user with the most followers for each country:
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC SELECT 
+# MAGIC   geo_df.country, 
+# MAGIC   pin_df.poster_name, 
+# MAGIC   MAX(pin_df.follower_count) AS follower_count
+# MAGIC FROM 
+# MAGIC   pin_df
+# MAGIC INNER JOIN
+# MAGIC   geo_df
+# MAGIC ON  
+# MAGIC   pin_df.ind = geo_df.ind
+# MAGIC GROUP BY 
+# MAGIC   geo_df.country, 
+# MAGIC   pin_df.poster_name;
 # MAGIC
-# MAGIC To Do:
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### Based on the above query, find the country with the user with most followers:
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC SELECT 
+# MAGIC   country, 
+# MAGIC   poster_name, 
+# MAGIC   MAX(follower_count)
+# MAGIC FROM 
+# MAGIC   pin_df
+# MAGIC INNER JOIN
+# MAGIC   geo_df
+# MAGIC ON  
+# MAGIC   pin_df.ind = geo_df.ind
+# MAGIC GROUP BY
+# MAGIC   country
+# MAGIC ORDER BY 
+# MAGIC   MAX(follower_count)
+# MAGIC LIMIT 
+# MAGIC   1;
 # MAGIC
-# MAGIC - check null values - particularly in the array in the coordinates column in the geo-df (see printSchema()).
-# MAGIC - double check all dtypes for accuracy - should be ok but no longs etc. 
-# MAGIC - reformatting of notebook structure - more Md cells etc. for explanation and guidence of process. 
