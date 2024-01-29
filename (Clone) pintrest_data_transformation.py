@@ -172,23 +172,32 @@ user_df.createOrReplaceTempView("user_df")
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select * from pin_df limit 1;
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select * from geo_df limit 1;
-
-# COMMAND ----------
-
-# MAGIC %sql 
-# MAGIC select * from user_df limit 1;
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC ---This query isn't quite right: returns thousands of results viz. far more than there are countries in the world---
-# MAGIC  
+# MAGIC WITH count_df AS(
+# MAGIC   SELECT 
+# MAGIC     geo_df.country AS country, 
+# MAGIC     pin_df.category AS category, 
+# MAGIC     COUNT(*) AS category_count, 
+# MAGIC     RANK() OVER(PARTITION BY geo_df.country ORDER BY COUNT(*) DESC) AS ranking
+# MAGIC   FROM 
+# MAGIC     pin_df
+# MAGIC   JOIN  
+# MAGIC     geo_df
+# MAGIC   ON 
+# MAGIC     pin_df.ind = geo_df.ind
+# MAGIC   GROUP BY 
+# MAGIC     geo_df.country, 
+# MAGIC     pin_df.category
+# MAGIC )
+# MAGIC SELECT
+# MAGIC   country, 
+# MAGIC   category,
+# MAGIC   category_count
+# MAGIC FROM 
+# MAGIC   count_df
+# MAGIC WHERE
+# MAGIC   ranking = 1
+# MAGIC ORDER BY
+# MAGIC   category_count DESC;
 
 # COMMAND ----------
 
@@ -200,26 +209,30 @@ user_df.createOrReplaceTempView("user_df")
 # MAGIC %sql
 # MAGIC WITH year_df AS(
 # MAGIC   SELECT 
-# MAGIC     ind,
-# MAGIC     EXTRACT(YEAR FROM timestamp) AS post_year
+# MAGIC     category, 
+# MAGIC     EXTRACT(YEAR FROM timestamp) AS post_year, 
+# MAGIC     COUNT(*) AS category_count
 # MAGIC   FROM 
+# MAGIC     pin_df
+# MAGIC   JOIN
 # MAGIC     geo_df
-# MAGIC )
+# MAGIC   ON 
+# MAGIC     pin_df.ind = geo_df.ind
+# MAGIC   GROUP BY
+# MAGIC     category,
+# MAGIC     post_year
+# MAGIC   )
 # MAGIC SELECT
 # MAGIC   post_year, 
-# MAGIC   category, 
-# MAGIC   COUNT(*) AS category_count
+# MAGIC   FIRST(category) AS category, 
+# MAGIC   SUM(category_count) AS category_count
 # MAGIC FROM 
-# MAGIC   pin_df
-# MAGIC INNER JOIN
 # MAGIC   year_df
-# MAGIC ON 
-# MAGIC   pin_df.ind = year_df.ind
 # MAGIC WHERE 
 # MAGIC   post_year BETWEEN 2018 AND 2022
 # MAGIC GROUP BY 
 # MAGIC   category, 
-# MAGIC   year_df.post_year
+# MAGIC   post_year
 # MAGIC ORDER BY 
 # MAGIC   post_year DESC; 
 
@@ -231,20 +244,32 @@ user_df.createOrReplaceTempView("user_df")
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC SELECT 
-# MAGIC   geo_df.country, 
-# MAGIC   pin_df.poster_name, 
-# MAGIC   MAX(pin_df.follower_count) AS follower_count
+# MAGIC WITH follower_df AS (
+# MAGIC   SELECT
+# MAGIC     geo_df.country AS country, 
+# MAGIC     pin_df.poster_name AS poster_name, 
+# MAGIC     pin_df.follower_count AS follower_count,
+# MAGIC     RANK() OVER(PARTITION BY geo_df.country ORDER BY follower_count DESC) AS ranking
+# MAGIC   FROM 
+# MAGIC     pin_df
+# MAGIC   JOIN
+# MAGIC     geo_df
+# MAGIC   ON  
+# MAGIC     pin_df.ind = geo_df.ind
+# MAGIC )
+# MAGIC SELECT
+# MAGIC   country, 
+# MAGIC   poster_name,
+# MAGIC   MAX(follower_count) AS follower_count
 # MAGIC FROM 
-# MAGIC   pin_df
-# MAGIC INNER JOIN
-# MAGIC   geo_df
-# MAGIC ON  
-# MAGIC   pin_df.ind = geo_df.ind
-# MAGIC GROUP BY 
-# MAGIC   geo_df.country, 
-# MAGIC   pin_df.poster_name;
-# MAGIC
+# MAGIC   follower_df
+# MAGIC WHERE 
+# MAGIC   ranking = 1
+# MAGIC GROUP BY
+# MAGIC   country,
+# MAGIC   poster_name
+# MAGIC ORDER BY 
+# MAGIC   follower_count;
 
 # COMMAND ----------
 
@@ -254,23 +279,33 @@ user_df.createOrReplaceTempView("user_df")
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC SELECT 
+# MAGIC WITH follower_df AS (
+# MAGIC   SELECT
+# MAGIC     geo_df.country AS country, 
+# MAGIC     pin_df.poster_name AS poster_name, 
+# MAGIC     pin_df.follower_count AS follower_count,
+# MAGIC     RANK() OVER(PARTITION BY geo_df.country ORDER BY follower_count DESC) AS ranking
+# MAGIC   FROM 
+# MAGIC     pin_df
+# MAGIC   JOIN
+# MAGIC     geo_df
+# MAGIC   ON  
+# MAGIC     pin_df.ind = geo_df.ind
+# MAGIC )
+# MAGIC SELECT
 # MAGIC   country, 
-# MAGIC   poster_name, 
-# MAGIC   MAX(follower_count)
+# MAGIC   MAX(follower_count) AS follower_count
 # MAGIC FROM 
-# MAGIC   pin_df
-# MAGIC INNER JOIN
-# MAGIC   geo_df
-# MAGIC ON  
-# MAGIC   pin_df.ind = geo_df.ind
+# MAGIC   follower_df
+# MAGIC WHERE 
+# MAGIC   ranking = 1
 # MAGIC GROUP BY
-# MAGIC   country
+# MAGIC   country,
+# MAGIC   poster_name
 # MAGIC ORDER BY 
-# MAGIC   MAX(follower_count)
+# MAGIC   follower_count DESC
 # MAGIC LIMIT 
 # MAGIC   1;
-# MAGIC
 
 # COMMAND ----------
 
@@ -404,45 +439,6 @@ user_df.createOrReplaceTempView("user_df")
 
 # MAGIC %md
 # MAGIC #### Find the median follower count of users that have joined between 2015 and 2020, based on which age group they are part of:
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC WITH cte AS(
-# MAGIC   SELECT
-# MAGIC     CASE
-# MAGIC       WHEN user_df.age BETWEEN 18 AND 24 THEN '18-24'
-# MAGIC       WHEN user_df.age BETWEEN 25 AND 35 THEN '25-35'
-# MAGIC       WHEN user_df.age BETWEEN 36 AND 50 THEN '36-50'
-# MAGIC       ELSE '50+'
-# MAGIC     END AS age_group,
-# MAGIC     EXTRACT(YEAR FROM user_df.date_joined) AS join_year, 
-# MAGIC     user_df.ind AS ind
-# MAGIC   FROM 
-# MAGIC     user_df
-# MAGIC   )
-# MAGIC SELECT
-# MAGIC   age_group,
-# MAGIC   join_year, 
-# MAGIC   PERCENTILE(pin_df.follower_count, 0.5) OVER(
-# MAGIC       PARTITION BY 
-# MAGIC         join_year, 
-# MAGIC         age_group
-# MAGIC       ORDER BY
-# MAGIC         join_year
-# MAGIC     ) AS median_follower_count
-# MAGIC FROM 
-# MAGIC   cte
-# MAGIC JOIN 
-# MAGIC   pin_df
-# MAGIC ON 
-# MAGIC   cte.ind = pin_df.ind
-# MAGIC WHERE 
-# MAGIC   join_year BETWEEN 2015 AND 2020
-# MAGIC GROUP BY 
-# MAGIC   join_year,
-# MAGIC   age_group,
-# MAGIC   median_follower_count;
 
 # COMMAND ----------
 
