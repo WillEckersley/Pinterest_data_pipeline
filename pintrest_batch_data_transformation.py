@@ -14,27 +14,28 @@ import urllib
 
 # COMMAND ----------
 
-delta_table_path = "dbfs:/user/hive/warehouse/authentication_credentials"
-aws_keys_df = spark.read.format("delta").load(delta_table_path)
+# The bellow are used only when mounting the notebook for the first time:
+#delta_table_path = "dbfs:/user/hive/warehouse/authentication_credentials"
+#aws_keys_df = spark.read.format("delta").load(delta_table_path)
 
 # COMMAND ----------
 
-ACCESS_KEY = aws_keys_df.select("Access key ID").collect()[0]["Access key ID"]
-SECRET_KEY = aws_keys_df.select("Secret access key").collect()[0]["Secret access key"]
-ENCODED_SECRET_KEY = urllib.parse.quote(string=SECRET_KEY, safe="")
-AWS_S3_BUCKET = "user-12471ce1b695-bucket"
-MOUNT_NAME = "/mnt/12471ce1b695-mount/"
-SOURCE_URL = f"s3n://{ACCESS_KEY}:{ENCODED_SECRET_KEY}@{AWS_S3_BUCKET}"
+#ACCESS_KEY = aws_keys_df.select("Access key ID").collect()[0]["Access key ID"]
+#SECRET_KEY = aws_keys_df.select("Secret access key").collect()[0]["Secret access key"]
+#ENCODED_SECRET_KEY = urllib.parse.quote(string=SECRET_KEY, safe="")
+#AWS_S3_BUCKET = "user-12471ce1b695-bucket"
+#MOUNT_NAME = "/mnt/12471ce1b695-mount/"
+#SOURCE_URL = f"s3n://{ACCESS_KEY}:{ENCODED_SECRET_KEY}@{AWS_S3_BUCKET}"
 
 # COMMAND ----------
 
-#Used only when mounting for first time - comment out if running the whole notebook from scratch.
+#Used only when mounting for first time:
 #dbutils.fs.mount(SOURCE_URL, MOUNT_NAME)
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC SET spark.databricks.delta.formatCheck.enabled=false 
+# MAGIC --SET spark.databricks.delta.formatCheck.enabled=false 
 
 # COMMAND ----------
 
@@ -160,6 +161,7 @@ user_df = user_df.withColumn("ind", user_df["ind"].cast("int"))
 
 # COMMAND ----------
 
+# Create SQL readable dataframes from the previously loaded data.
 pin_df.createOrReplaceTempView("pin_df")
 geo_df.createOrReplaceTempView("geo_df")
 user_df.createOrReplaceTempView("user_df")
