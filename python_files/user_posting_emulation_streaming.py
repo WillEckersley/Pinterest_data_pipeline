@@ -89,7 +89,7 @@ def run_infinite_post_data_loop():
                 "PartitionKey": "user"
                     })
                  
-            invoke_url = "https://dytgh5kfhl.execute-api.us-east-1.amazonaws.com/stream_test/streams/"
+            invoke_url = "https://dytgh5kfhl.execute-api.us-east-1.amazonaws.com/test/streams/"
             headers = {'Content-Type': 'application/json'}
             
             pin_stream = requests.request("PUT", f"{invoke_url}{pin_stream_name}/record", headers=headers, data=pin_payload)
