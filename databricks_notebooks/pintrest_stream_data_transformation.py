@@ -4,7 +4,6 @@
 
 # COMMAND ----------
 
-from pyspark.sql.types import *
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
 import urllib
@@ -13,9 +12,6 @@ import urllib
 
 delta_table_path = "dbfs:/user/hive/warehouse/authentication_credentials"
 aws_keys_df = spark.read.format("delta").load(delta_table_path)
-
-# COMMAND ----------
-
 ACCESS_KEY = aws_keys_df.select('Access key ID').collect()[0]['Access key ID']
 SECRET_KEY = aws_keys_df.select('Secret access key').collect()[0]['Secret access key']
 ENCODED_SECRET_KEY = urllib.parse.quote(string=SECRET_KEY, safe="")
@@ -32,6 +28,8 @@ ENCODED_SECRET_KEY = urllib.parse.quote(string=SECRET_KEY, safe="")
 
 # COMMAND ----------
 
+# Create a function to construct DataFrames from the incoming Kinesis streams. 
+
 def create_df(stream_name, schema):
     """Creates a Spark DataFrame from an AWS Kinesis Stream 
        containing json objects.
@@ -43,9 +41,6 @@ def create_df(stream_name, schema):
     Returns:
       A Spark DataFrame where the keys of the JSON objects are column names and 
       the values records 
-
-    Raises:
-      ConnectionError: If no available port is found.
     """
     df = spark \
     .readStream \
@@ -196,16 +191,42 @@ user_df = user_df.withColumn("ind", user_df["ind"].cast("int"))
 
 # COMMAND ----------
 
-display(pin_df)
+# MAGIC %md 
+# MAGIC #### Write the DataFrames to Delta Tables:
 
 # COMMAND ----------
 
-display(geo_df)
+# Create a function to write the DataFrames to Delta tables.
+
+def write_table_to_delta(df, table_name):
+    """Writes data from Spark DataFrame to a Delta table.
+
+    Args:
+      df (DataFrame): A DataFrame containig the data you wish to write to Delta.
+      table_name (str): A string representation of the name of Delta table to write to.
+
+    Returns:
+      A stream which writes the contetnt of df to a Delta table with the name <table_name>.
+
+    """
+    write_table = (
+        df
+            .writeStream
+            .format("delta")
+            .outputMode("append")
+            .option("checkpointLocation", f"tmp/checkpoints/{table_name}")
+            .table(table_name)
+    )
+    return write_table
 
 # COMMAND ----------
 
-display(user_df)
+write_table_to_delta(pin_df, "12471ce1b695_pin_table")
 
 # COMMAND ----------
 
+write_table_to_delta(geo_df, "12471ce1b695_geo_table")
 
+# COMMAND ----------
+
+write_table_to_delta(user_df, "12471ce1b695_user_table")
