@@ -107,6 +107,7 @@ def run_infinite_post_data_loop():
             
             except requests.RequestException as e:
                 print(f"Error sending data: {e}.")
+                return None
 
 
 if __name__ == "__main__":
