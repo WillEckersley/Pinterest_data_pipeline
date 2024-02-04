@@ -1,0 +1,23 @@
+boto3 @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/boto3_1701814686958/work
+botocore @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/botocore_1701809007980/work
+Brotli @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/brotli-split_1699238731048/work
+certifi @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/certifi_1701809142774/work/certifi
+cffi @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_44mvycfmuf/croot/cffi_1700254431144/work
+charset-normalizer @ file:///tmp/build/80754af9/charset-normalizer_1630003229654/work
+cryptography @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_85yzbl_qze/croot/cryptography_1702070288916/work
+greenlet==3.0.3
+idna @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/idna_1699239456905/work
+jmespath @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/jmespath_1701807918873/work
+pycparser @ file:///tmp/build/80754af9/pycparser_1636541352034/work
+PyMySQL @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/pymysql_1699281008465/work
+pyOpenSSL @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/pyopenssl_1699246895832/work
+PySocks @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/pysocks_1699239289103/work
+python-dateutil @ file:///tmp/build/80754af9/python-dateutil_1626374649649/work
+requests @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/requests_1699240282740/work
+s3transfer @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/s3transfer_1701813401804/work
+setuptools==68.2.2
+six @ file:///tmp/build/80754af9/six_1644875935023/work
+SQLAlchemy==2.0.25
+typing_extensions==4.9.0
+urllib3 @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/urllib3_1699239673180/work
+wheel==0.41.2
