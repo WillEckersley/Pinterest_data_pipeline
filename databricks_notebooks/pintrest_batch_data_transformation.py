@@ -40,31 +40,31 @@ import urllib
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Load the post, location and user data into dataframes:
+# MAGIC #### Load the post, location and user data into DataFrames:
 
 # COMMAND ----------
 
-pin_topic_location = "/mnt/12471ce1b695-mount/topics/12471ce1b695.pin/partition=0/"
+# Create a function to construct DataFrames from the incoming tables.
 
-pin_df = spark.read.format("json") \
+def create_dataframe(location):
+  """Creates a Spark DataFrame from incoming JSON objects.
+
+  Args:
+    location (str): The location fo the incoming JSON objects.
+  
+  Returns:
+    A DataFrame containing the JSON objects. 
+  """
+  df = spark.read.format("json") \
     .option("inferSchema", "true") \
-        .load(pin_topic_location)
+        .load(location)
+  return df
 
 # COMMAND ----------
 
-geo_topic_location = "/mnt/12471ce1b695-mount/topics/12471ce1b695.geo/partition=0/"
-
-geo_df = spark.read.format("json") \
-    .option("inferSchema", "true") \
-        .load(geo_topic_location)
-
-# COMMAND ----------
-
-user_topic_location = "/mnt/12471ce1b695-mount/topics/12471ce1b695.user/partition=0/"
-
-user_df = spark.read.format("json") \
-    .option("inferSchema", "true") \
-        .load(user_topic_location)
+pin_df = create_dataframe("/mnt/12471ce1b695-mount/topics/12471ce1b695.pin/partition=0/")
+geo_df = create_dataframe("/mnt/12471ce1b695-mount/topics/12471ce1b695.geo/partition=0/")
+user_df = create_dataframe("/mnt/12471ce1b695-mount/topics/12471ce1b695.user/partition=0/")
 
 # COMMAND ----------
 
