@@ -91,14 +91,23 @@ def run_infinite_post_data_loop():
                  
             invoke_url = "https://dytgh5kfhl.execute-api.us-east-1.amazonaws.com/test/streams/"
             headers = {'Content-Type': 'application/json'}
-            
-            pin_stream = requests.request("PUT", f"{invoke_url}{pin_stream_name}/record", headers=headers, data=pin_payload)
-            geo_stream = requests.request("PUT", f"{invoke_url}{geo_stream_name}/record", headers=headers, data=geo_payload)
-            user_stream = requests.request("PUT", f"{invoke_url}{user_stream_name}/record", headers=headers, data=user_payload)
 
-            print(f"Pin status code = {pin_stream.status_code}")
-            print(f"Geo status code = {geo_stream.status_code}")
-            print(f"User status code = {user_stream.status_code}")
+            try:
+                pin_stream = requests.request("PUT", f"{invoke_url}{pin_stream_name}/record", headers=headers, data=pin_payload)
+                geo_stream = requests.request("PUT", f"{invoke_url}{geo_stream_name}/record", headers=headers, data=geo_payload)
+                user_stream = requests.request("PUT", f"{invoke_url}{user_stream_name}/record", headers=headers, data=user_payload)
+
+                pin_stream.raise_for_status()
+                geo_stream.raise_for_status()
+                user_stream.raise_for_status()
+
+                print(f"Pin status code = {pin_stream.status_code}")
+                print(f"Geo status code = {geo_stream.status_code}")
+                print(f"User status code = {user_stream.status_code}")  
+            
+            except requests.RequestException as e:
+                print(f"Error sending data: {e}.")
+
 
 if __name__ == "__main__":
     run_infinite_post_data_loop()
