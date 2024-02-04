@@ -94,14 +94,23 @@ def run_infinite_post_data_loop():
             
             invoke_url = "https://dytgh5kfhl.execute-api.us-east-1.amazonaws.com/prod/topics/"
             headers = {"Content-Type": "application/vnd.kafka.json.v2+json"}
+
+            try:
+                result_response = requests.request("POST", f"{invoke_url}12471ce1b695.pin", headers=headers, data=result_payload)
+                geo_response = requests.request("POST", f"{invoke_url}12471ce1b695.geo", headers=headers, data=geo_payload)
+                user_response = requests.request("POST", f"{invoke_url}12471ce1b695.user", headers=headers, data=user_payload)
+
+                user_response.raise_for_status()
+                geo_response.raise_for_status()
+                user_response.raise_for_status()
+                
+                print(f"Result status code = {result_response.status_code}")
+                print(f"Geo status code = {geo_response.status_code}")
+                print(f"User status code = {user_response.status_code}")
             
-            result_response = requests.request("POST", f"{invoke_url}12471ce1b695.pin", headers=headers, data=result_payload)
-            geo_response = requests.request("POST", f"{invoke_url}12471ce1b695.geo", headers=headers, data=geo_payload)
-            user_response = requests.request("POST", f"{invoke_url}12471ce1b695.user", headers=headers, data=user_payload)
-            
-            print(f"Result status code = {result_response.status_code}")
-            print(f"Geo status code = {geo_response.status_code}")
-            print(f"User status code = {user_response.status_code}")
+            except requests.RequestException as e:
+                print(f"Error encountered: {e}.")
+                return None
 
            
 if __name__ == "__main__":
