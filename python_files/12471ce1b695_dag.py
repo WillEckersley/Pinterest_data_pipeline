@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 #Define params for Submit Run Operator
 notebook_task = {
-    "notebook_path": "/Repos/will_eckersley@hotmail.co.uk/Pintrest_data_pipeline/pintrest_batch_data_transformation",
+    "notebook_path": "/Repos/will_eckersley@hotmail.co.uk/Pintrest_data_pipeline/databricks_notebooks/pintrest_batch_data_transformation",
 }
 
 #Define params for Run Now Operator
