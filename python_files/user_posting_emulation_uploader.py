@@ -53,7 +53,7 @@ def run_infinite_post_data_loop():
 
         with engine.connect() as connection:
 
-            pin_string = text(f"SELECT * FROM ***REMOVED*** LIMIT {random_row}, 1")
+            pin_string = text(f"SELECT * FROM pinterest_data LIMIT {random_row}, 1")
             pin_selected_row = connection.execute(pin_string)
             
             for row in pin_selected_row:

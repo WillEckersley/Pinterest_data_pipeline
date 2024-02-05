@@ -1,6 +1,6 @@
 # Implementation Details:
 
-The purpose of this document is to outline the key steps that were taken to implementation the cloud architecture for this project. By creating it, I hope to provide some insights into, in particular, how the data used in this project was extracted and loaded into Databricks prior to transformation. Please note that my aim here has been to provide the 'greatest hits' of the project, rather than the entire discography. If you'd like to know anything more about how this project was designed and implemented, please feel free to ask!
+The purpose of this document is to outline the key steps that were taken to implement the cloud architecture for this project. By creating it, I hope to provide some insights into, in particular, how the data used in this project was extracted and loaded into Databricks prior to transformation. Please note that my aim here has been to provide the 'greatest hits' of the project, rather than the entire discography. If you'd like to know anything more about how this project was designed and implemented, please feel free to ask!
 
 ### Phase 1: Cloud services implementation for batch processing:
 
