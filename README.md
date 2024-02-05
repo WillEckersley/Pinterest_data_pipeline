@@ -3,9 +3,9 @@
 </p>
 
 
-# Pintrest_data_pipeline
+# Pinterest_data_pipeline
 
-#### Two big data ELT pipelines managing output from the popular website 'Pintrest'. 
+#### Two big data ELT pipelines managing output from the popular website 'Pinterest'. 
 
 ## §1 Table of contents:
 
