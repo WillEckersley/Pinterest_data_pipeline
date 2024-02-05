@@ -133,7 +133,7 @@ Post data (pin_df):
 | unique ID           | string    |
 | title               | string    |
 | description         | string    |
-| follower_count      | string    |
+| follower_count      | integer   |
 | poster_name         | string    |
 | tag_list            | string    |
 | is_image_or_video   | string    |
@@ -160,7 +160,7 @@ User data (user_df):
 | age                 | integer   |
 | date_joined         | timestamp |
 
-It was then queried using Databricks SQL. The following insights were taken from the cleaned dataset:
+The data was then queried using Databricks SQL. The following insights were taken from the cleaned dataset:
 
 -	The most popular Pinterest category in each country.
 -	The number of posts in each category between 2018 and 2022.
@@ -170,6 +170,8 @@ It was then queried using Databricks SQL. The following insights were taken from
 -	The number of users that have joined between 2015 and 2020
 -	The median follower count for users that joined between 2015 and 2020.
 -	The median follower count for users that joined between 2015 and 2020 based on their generational age grouping.
+
+Again, please see pintrest_batch_data_processing.py in this repository for details.
 
 ### §3.1.4 Orchestration/management:
 
