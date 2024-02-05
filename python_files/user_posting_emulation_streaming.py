@@ -6,6 +6,7 @@ import boto3
 import json
 import sqlalchemy
 from sqlalchemy import text
+import yaml
 
 
 random.seed(100)
@@ -13,27 +14,40 @@ random.seed(100)
 
 class AWSDBConnector:
 
-    def __init__(self):
+    def create_db_connector(self, yaml_creds):
+        """Creates a connection to a database using a yaml file containing the relevant connection credentials.
 
-        self.HOST = "***REMOVED***"
-        self.USER = '***REMOVED***'
-        self.PASSWORD = '***REMOVED***'
-        self.DATABASE = '***REMOVED***'
-        self.PORT = ***REMOVED***
-        
-    def create_db_connector(self):
-        engine = sqlalchemy.create_engine(f"mysql+pymysql://{self.USER}:{self.PASSWORD}@{self.HOST}:{self.PORT}/{self.DATABASE}?charset=utf8mb4")
-        return engine
+        Args:
+            yaml_creds (str): A string representation of a local directory storing database credentials in a yaml file.
+
+        Returns: 
+            engine (database engine): an engine for connecting to a database. 
+        """
+        with open(yaml_creds, "r") as f:
+            try: 
+                db_creds = yaml.safe_load(f)
+                engine = sqlalchemy.create_engine(f"mysql+pymysql://{db_creds["USER"]}:{db_creds["PASSWORD"]}@{db_creds["HOST"]}:{db_creds["PORT"]}/{db_creds["DATABASE"]}?charset=utf8mb4")
+                return engine
+            except yaml.YAMLError as e:
+                print(f"Error loading creds: {e}")
 
 
 new_connector = AWSDBConnector()
 
 
 def run_infinite_post_data_loop():
+    """Runs an infinite loop which sends records representing website data.
+
+    Args: 
+        none
+    
+    Returns:
+        none
+    """
     while True:
         sleep(random.randrange(0, 2))
         random_row = random.randint(0, 11000)
-        engine = new_connector.create_db_connector()
+        engine = new_connector.create_db_connector("/Users/willeckersley/Projects/Repositories/Pintrest_data_pipeline/dbcreds.yaml")
 
         with engine.connect() as connection:
 
