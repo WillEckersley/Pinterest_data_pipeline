@@ -78,6 +78,10 @@ This occured in the following six steps:
 - MSK connect was connected to an S3 bucket using a custom connector/plugin which directed the data to folders corresponding to Kafka topics within S3.
 - The S3 bucket was mounted to databricks.
 
+Bellow: an image of the EC2 maching sending Kafka messages to the RESTful proxy.
+
+![Image of kafka REST proxy recieving messages](https://github.com/WillEckersley/Pintrest_data_pipeline/blob/main/README_images/kafka_rest_recieving_screen.png)
+
 See implementations_details.md in this repository for more details. 
 
 ### §3.1.3 Transformation:
@@ -96,6 +100,10 @@ Once in databricks, the data was processed using a Spark cluster. It was then qu
 ### §3.1.4 Orchistration/management:
 
 This took place using MWAA/Airflow. A DAG was created that sent a simple submit run to the Dataricks notebook so it would be run once every day at 12 o'clock (see 12471ce1b695_dag.py in this repository).
+
+Bellow: an image of the DAG orchistrating tasks via airflow.
+
+![An image of the DAG orchistrating tasks via airflow.](https://github.com/WillEckersley/Pintrest_data_pipeline/blob/main/README_images/mwaa_screen.png)
 
 ### §3.2 Stream processing:
 
@@ -124,6 +132,10 @@ See implementations_details.md in this repository for more details.
 ### §3.2.3 Transformation:
 
 Once in databricks, the data was again processed using a Spark cluster. It was cleaned in the same fashion as before and then read to Delta tables using a custom function that also created table name specific checkpoints to allow for versioning.
+
+Bellow: an image of the graphs monitoring the stream of data as it is written to DeltaTables. 
+
+![An image of the graphs monitoring the stream of data as it is written to DeltaTables](https://github.com/WillEckersley/Pintrest_data_pipeline/blob/main/README_images/stream_screen.png)
 
 ## §4 Usage:
 
