@@ -48,9 +48,9 @@
 
 ## §2 Introduction:
 
-In this final project designed by AiCore, I constructed two big data pipelines. Each took raw data from Pintrest and transformed it using ELT processes. The intermediate results in both cases were cleaned datasets loaded into Databricks notebooks (see pintrest_batch_data_transformation.py and pintrest_stream_data_transformation.py in the databricks_notebooks folder in this repository). Ultimately, the batch processed data was subjected to analysis using SQL magic cells (for results see the notebook). 
+In this final project designed by AiCore, I constructed two big data pipelines. Each took raw data from Pintrest and transformed it using ELT processes. The intermediate results in both cases were cleaned datasets loaded into Databricks notebooks (see pintrest_batch_data_transformation.py and pintrest_stream_data_transformation.py in the databricks_notebooks folder in this repository). Ultimately, the batch processed data was subjected to analysis using SQL magic cells (for results see the notebook).In the case of the streamed dataset, the data was ultimately loaded directly into DeltaLake tables for permanent storage. 
 
-In the case of the streamed dataset, the data was ultimately loaded directly into DeltaLake tables for permanent storage. As much of this project was executed in the cloud using a variety of AWS services, I have included an additional implementation_details.md file in this repository which provides further detail about how this project was constructed. In particular, this documents the implementation of the cloud technologies which were used to create the project.
+As much of this project was executed in the cloud using a variety of AWS services, I have included an additional implementation_details.md file in this repository which provides further detail about how this project was constructed. In particular, this documents the implementation of the cloud technologies which were used to create the project.
 
 Building this project has exposed me to the use of big data tools in a production environment. It has strengthened my understanding of many of the tools that are crucial in the deployment of modern ELT pipelines such as Kafka, Airflow, datalakes (AWS S3), cloud computing (AWS EC2) and Databricks. 
 
@@ -66,9 +66,43 @@ Building this project has exposed me to the use of big data tools in a productio
 
 The data was extracted from an extant RDS database using a python script (user_posting_emulation_uploaded.py). This script simulates a stream of data coming from a website using a random row selector. The data came from three separate tables in the original RDS:
 
-- pin (representing posts)
-- geo (representing the location of posts)
-- user (representing user data)
+- pin (representing posts):
+
+| Columns             | Datatypes |
+|---------------------|-----------|
+| ind                 | string   |
+| unique ID           | string    |
+| title               | string    |
+| description         | string    |
+| follower_count      | string    |
+| poster_name         | string    |
+| tag_list            | string    |
+| is_image_or_video   | string    |
+| image_src           | string    |
+| save_location       | string    |
+| category            | string    |
+| downloaded          | string    |
+
+  
+- geo (representing the location of posts):
+
+| Columns             | Datatypes |
+|---------------------|-----------|
+| ind                 | string    |
+| country             | string    |
+| latitude            | string    |
+| longitude           | string    |
+| timestamp           | string    |
+
+- user (representing user data):
+
+| Columns             | Datatypes |
+|---------------------|-----------|
+| ind                 | string    |
+| first_name          | string    |
+| last_name           | string    |
+| age                 | string    |
+| date_joined         | string    |
 
 ### §3.1.2 Loading:
 
@@ -89,7 +123,44 @@ See implementations_details.md in this repository for more details.
 
 ### §3.1.3 Transformation:
 
-Once in Databricks, the data was processed using a Spark cluster. It was then queried using Databricks SQL. The following insights were taken from the cleaned dataset:
+Once in Databricks, the data was processed using a Spark cluster. First, it was cleaned. This invovled standard techniques of filtering, ordering etc (see pintrest_batch_data_transformation.py in this repository for details). As a result of the cleaning the following tables were created:
+
+Post data (pin_df):
+
+| Columns             | Datatypes |
+|---------------------|-----------|
+| ind                 | integer   |
+| unique ID           | string    |
+| title               | string    |
+| description         | string    |
+| follower_count      | string    |
+| poster_name         | string    |
+| tag_list            | string    |
+| is_image_or_video   | string    |
+| image_src           | string    |
+| save_location       | string    |
+| category            | string    |
+| downloaded          | boolean   |
+
+Location data (geo_df):
+
+| Columns             | Datatypes |
+|---------------------|-----------|
+| ind                 | integer   |
+| country             | string    |
+| coordinates         | array     |
+| timestamp           | timestamp |
+
+User data (user_df):
+
+| Columns             | Datatypes |
+|---------------------|-----------|
+| ind                 | integer   |
+| user_name           | string    |
+| age                 | integer   |
+| date_joined         | timestamp |
+
+It was then queried using Databricks SQL. The following insights were taken from the cleaned dataset:
 
 -	The most popular Pinterest category in each country.
 -	The number of posts in each category between 2018 and 2022.
@@ -134,7 +205,7 @@ See implementations_details.md in this repository for more details.
 
 ### §3.2.3 Transformation:
 
-Once in Databricks, the data was again processed using a Spark cluster. It was cleaned in the same fashion as before and then read to Delta tables using a custom function that also created table name specific checkpoints to allow for versioning.
+Once in Databricks, the data was again processed using a Spark cluster. It was cleaned in the same fashion as before (see section 3.1.3 of this README) and then read to Delta tables using a custom function that also created table name specific checkpoints to allow for versioning.
 
 Bellow: an image of the graphs monitoring the stream of data as it is written to DeltaTables. 
 
